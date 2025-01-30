@@ -36,6 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -54,6 +55,9 @@ public class LogEntry {
 	private HttpRequest request;
 	@Setter(AccessLevel.NONE)
 	private HttpResponse response;
+
+	private String requestBodyString;
+	private String responseBodyString;
 
 	private Integer identifier;
 	private ToolType tool;
@@ -176,6 +180,7 @@ public class LogEntry {
 
 	private Status processRequest() {
 
+		requestBodyString = new String(request.body().getBytes(), StandardCharsets.UTF_8);
 
 		requestHeaders = new ArrayList<>(request.headers());
 
@@ -277,6 +282,9 @@ public class LogEntry {
 	}
 
 	private Status processResponse() {
+
+		responseBodyString = new String(response.body().getBytes(), StandardCharsets.UTF_8);
+
 		reflectedParameters = new ArrayList<>();
 //		IResponseInfo tempAnalyzedResp = LoggerPlusPlus.montoya.getHelpers()
 //				.analyzeResponse(response);
@@ -349,7 +357,7 @@ public class LogEntry {
 		if (responseBodyLength < maxRespSize) {
 			//Only title match HTML files. Prevents expensive regex running on e.g. binary downloads.
 			if (this.responseInferredMimeType == MimeType.HTML) {
-				Matcher titleMatcher = Globals.HTML_TITLE_PATTERN.matcher(response.bodyToString());
+				Matcher titleMatcher = Globals.HTML_TITLE_PATTERN.matcher(responseBodyString);
 				if (titleMatcher.find()) {
 					this.title = titleMatcher.group(1);
 				}
@@ -357,7 +365,7 @@ public class LogEntry {
 
 			ReflectionController reflectionController = LoggerPlusPlus.instance.getReflectionController();
 			reflectedParameters = request.parameters().parallelStream()
-					.filter(parameter -> !reflectionController.isParameterFiltered(parameter) && reflectionController.validReflection(response.bodyToString(), parameter))
+					.filter(parameter -> !reflectionController.isParameterFiltered(parameter) && reflectionController.validReflection(responseBodyString, parameter))
 					.map(HttpParameter::name).collect(Collectors.toList());
 
 		} else {
@@ -365,7 +373,7 @@ public class LogEntry {
 			ReflectionController reflectionController = LoggerPlusPlus.instance.getReflectionController();
 			reflectedParameters = request.parameters().parallelStream()
 					.filter(parameter -> !reflectionController.isParameterFiltered(parameter)
-							&& reflectionController.validReflection(response.bodyToString(), parameter))
+							&& reflectionController.validReflection(responseBodyString, parameter))
 					.map(HttpParameter::name).collect(Collectors.toList());
 
 			//Trim the response down to a maximum size, but at least keep the headers!
@@ -503,12 +511,12 @@ public class LogEntry {
 				case REFLECTION_COUNT:
 					return reflectedParameters.size();
 				case REQUEST_BODY: // request
-					return request.bodyToString();
+					return requestBodyString;
 				case REQUEST_BODY_LENGTH:
 					return request.body().length();
 //							.substring(request.length - requestBodyLength);
 				case RESPONSE_BODY: // response
-					return response.bodyToString();
+					return responseBodyString;
 				case RESPONSE_BODY_LENGTH:
 					return response.body().length();
 				case RTT:
