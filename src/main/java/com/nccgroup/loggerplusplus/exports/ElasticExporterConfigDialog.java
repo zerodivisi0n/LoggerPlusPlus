@@ -25,7 +25,7 @@ import static com.nccgroup.loggerplusplus.util.Globals.*;
 public class ElasticExporterConfigDialog extends JDialog {
 
     ElasticExporterConfigDialog(Frame owner, ElasticExporter elasticExporter){
-        super(owner, "Elastic Exporter Configuration", true);
+        super(owner, "OpenSearch Exporter Configuration", true);
 
         this.setLayout(new BorderLayout());
         Preferences preferences = elasticExporter.getPreferences();
@@ -103,7 +103,7 @@ public class ElasticExporterConfigDialog extends JDialog {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 List<LogEntryField> selectedFields = MoreHelp.showFieldChooserDialog(indexNameField,
-                        preferences, "Elastic Exporter", elasticExporter.getFields());
+                        preferences, "OpenSearch Exporter", elasticExporter.getFields());
 
                 if(selectedFields == null){
                     //Cancelled.
@@ -112,7 +112,7 @@ public class ElasticExporterConfigDialog extends JDialog {
                 } else {
                     JOptionPane.showMessageDialog(indexNameField,
                             "No fields were selected. No changes have been made.",
-                            "Elastic Exporter", JOptionPane.INFORMATION_MESSAGE);
+                            "OpenSearch Exporter", JOptionPane.INFORMATION_MESSAGE);
                 }
             }
         });
@@ -224,8 +224,8 @@ public class ElasticExporterConfigDialog extends JDialog {
                         new LogTableFilter(logFilter);
                     } catch (ParseException ex) {
                         JOptionPane.showMessageDialog(ElasticExporterConfigDialog.this,
-                                "Cannot save Elastic Exporter configuration. The chosen log filter is invalid: \n" +
-                                        ex.getMessage(), "Invalid Elastic Exporter Configuration", JOptionPane.ERROR_MESSAGE);
+                                "Cannot save OpenSearch Exporter configuration. The chosen log filter is invalid: \n" +
+                                        ex.getMessage(), "Invalid OpenSearch Exporter Configuration", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
                 }

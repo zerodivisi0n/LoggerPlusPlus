@@ -18,9 +18,11 @@ dependencies {
     implementation 'net.portswigger.burp.extensions:montoya-api:2023.10.4'
     implementation 'org.swinglabs:swingx:1.6.1'
     implementation 'com.github.CoreyD97:Burp-Montoya-Utilities:54678c64'
-    implementation 'co.elastic.clients:elasticsearch-java:8.8.2'
+    implementation 'org.opensearch.client:opensearch-rest-client:2.18.0'
+    implementation 'org.opensearch.client:opensearch-java:2.18.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
-    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.apache.commons:commons-text:1.10.0'
     implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
 

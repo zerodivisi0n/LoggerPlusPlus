@@ -1,15 +1,15 @@
 package com.nccgroup.loggerplusplus.exports;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
-import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
-import co.elastic.clients.elasticsearch.indices.ExistsRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.ElasticsearchTransport;
-import co.elastic.clients.transport.endpoints.BooleanResponse;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.endpoints.BooleanResponse;
+import org.opensearch.client.transport.rest_client.RestClientTransport;
 import com.coreyd97.BurpExtenderUtilities.Preferences;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.Version;
@@ -31,8 +31,8 @@ import org.apache.http.HttpHost;
 import org.apache.http.message.BasicHeader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestClientBuilder;
 
 
 import javax.swing.*;
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 @Log4j2
 public class ElasticExporter extends AutomaticLogExporter implements ExportPanelProvider, ContextMenuExportProvider {
 
-    ElasticsearchClient elasticClient;
+    OpenSearchClient elasticClient;
     ArrayList<LogEntry> pendingEntries;
     LogTableFilter logFilter;
     private List<LogEntryField> fields;
@@ -79,9 +79,9 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
             try {
                 this.exportController.enableExporter(this);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(LoggerPlusPlus.instance.getLoggerFrame(), "Could not start elastic exporter: " +
-                        e.getMessage() + "\nSee the logs for more information.", "Elastic Exporter", JOptionPane.ERROR_MESSAGE);
-                logger.error("Could not automatically start elastic exporter:", e);
+                JOptionPane.showMessageDialog(LoggerPlusPlus.instance.getLoggerFrame(), "Could not start OpenSearch exporter: " +
+                        e.getMessage() + "\nSee the logs for more information.", "OpenSearch Exporter", JOptionPane.ERROR_MESSAGE);
+                logger.error("Could not automatically start OpenSearch exporter:", e);
             }
         }
         controlPanel = new ElasticExporterControlPanel(this);
@@ -99,8 +99,8 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
 //            //The current filter isn't what we used to export last time.
 //            int res = JOptionPane.showConfirmDialog(LoggerPlusPlus.instance.getLoggerFrame(),
 //                    "Heads up! Looks like the filter being used to select which logs to export to " +
-//                            "ElasticSearch has changed since you last ran the exporter for this project.\n" +
-//                            "Do you want to continue?", "ElasticSearch Export Log Filter", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+//                            "OpenSearch has changed since you last ran the exporter for this project.\n" +
+//                            "Do you want to continue?", "OpenSearch Export Log Filter", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 //            if (res == JOptionPane.NO_OPTION) {
 //                throw new Exception("Export cancelled.");
 //            }
@@ -110,8 +110,8 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
             try {
                 logFilter = new LogTableFilter(filterString);
             } catch (ParseException ex) {
-                logger.error("The log filter configured for the Elastic exporter is invalid!", ex);
-                throw new Exception("The log filter configured for the Elastic exporter is invalid!", ex);
+                logger.error("The log filter configured for the OpenSearch exporter is invalid!", ex);
+                throw new Exception("The log filter configured for the OpenSearch exporter is invalid!", ex);
             }
         }
 
@@ -120,7 +120,7 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
         indexName = preferences.getSetting(Globals.PREF_ELASTIC_INDEX);
         String protocol = preferences.getSetting(Globals.PREF_ELASTIC_PROTOCOL).toString();
         RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(address, port, protocol));
-        logger.info(String.format("Starting ElasticSearch exporter. %s://%s:%s/%s", protocol, address, port, indexName));
+        logger.info(String.format("Starting OpenSearch exporter. %s://%s:%s/%s", protocol, address, port, indexName));
 
         Globals.ElasticAuthType authType = preferences.getSetting(Globals.PREF_ELASTIC_AUTH);
         String user = "", pass = "";
@@ -139,15 +139,15 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
         }
 
         if (!"".equals(user) && !"".equalsIgnoreCase(pass)) {
-            logger.info(String.format("ElasticSearch using %s, Username: %s", authType, user));
+            logger.info(String.format("OpenSearch using %s, Username: %s", authType, user));
             String authValue = Base64.getEncoder().encodeToString((user + ":" + pass).getBytes(StandardCharsets.UTF_8));
             restClientBuilder.setDefaultHeaders(new Header[]{new BasicHeader("Authorization", String.format("%s %s", authType, authValue))});
         }
 
 
-        ElasticsearchTransport transport = new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper(this.mapper));
+        OpenSearchTransport transport = new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper(this.mapper));
 
-        elasticClient = new ElasticsearchClient(transport);
+        elasticClient = new OpenSearchClient(transport);
 
         createIndices();
         pendingEntries = new ArrayList<>();
@@ -238,7 +238,7 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                     );
 
                 } catch (Exception e) {
-                    log.error("Could not build elastic export request for entry: " + e.getMessage());
+                    log.error("Could not build OpenSearch export request for entry: " + e.getMessage());
                     //Could not build index request. Ignore it?
                 }
             }
@@ -255,8 +255,8 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                 connectFailedCounter++;
                 if(connectFailedCounter > 5) {
                     JOptionPane.showMessageDialog(JOptionPane.getFrameForComponent(LoggerPlusPlus.instance.getLoggerMenu()),
-                            "Elastic exporter could not connect after 5 attempts. Elastic exporter shutting down...",
-                            "Elastic Exporter - Connection Failed", JOptionPane.ERROR_MESSAGE);
+                            "OpenSearch exporter could not connect after 5 attempts. OpenSearch exporter shutting down...",
+                            "OpenSearch Exporter - Connection Failed", JOptionPane.ERROR_MESSAGE);
                     shutdown();
                 }
             }catch (IOException e) {
@@ -303,7 +303,7 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                         default: log.error("Unhandled field type: " + field.getType().getSimpleName());
                     }
                 }catch (Exception e){
-                    log.error("ElasticExporter: Couldn't serialize field. The field was ommitted from the export.");
+                    log.error("OpenSearchExporter: Couldn't serialize field. The field was ommitted from the export.");
                 }
             }
             gen.writeEndObject();

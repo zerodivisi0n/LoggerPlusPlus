@@ -15,10 +15,10 @@ import java.util.concurrent.ExecutionException;
 public class ElasticExporterControlPanel extends JPanel {
 
     private final ElasticExporter elasticExporter;
-    private static final String STARTING_TEXT = "Starting Elastic Exporter...";
-    private static final String STOPPING_TEXT = "Stopping Elastic Exporter...";
-    private static final String START_TEXT = "Start Elastic Exporter";
-    private static final String STOP_TEXT = "Stop Elastic Exporter";
+    private static final String STARTING_TEXT = "Starting OpenSearch Exporter...";
+    private static final String STOPPING_TEXT = "Stopping OpenSearch Exporter...";
+    private static final String START_TEXT = "Start OpenSearch Exporter";
+    private static final String STOP_TEXT = "Stop OpenSearch Exporter";
 
     Logger logger = LogManager.getLogger(this);
 
@@ -26,7 +26,7 @@ public class ElasticExporterControlPanel extends JPanel {
         this.elasticExporter = elasticExporter;
         this.setLayout(new BorderLayout());
 
-        JButton showConfigDialogButton = new JButton(new AbstractAction("Configure Elastic Exporter") {
+        JButton showConfigDialogButton = new JButton(new AbstractAction("Configure OpenSearch Exporter") {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 new ElasticExporterConfigDialog(LoggerPlusPlus.instance.getLoggerFrame(), elasticExporter)
@@ -38,7 +38,7 @@ public class ElasticExporterControlPanel extends JPanel {
             }
         });
 
-        JToggleButton exportButton = new JToggleButton("Start Elastic Exporter");
+        JToggleButton exportButton = new JToggleButton("Start OpenSearch Exporter");
         exportButton.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
@@ -68,9 +68,9 @@ public class ElasticExporterControlPanel extends JPanel {
                     protected void done() {
                         try {
                             if(exception != null) {
-                                JOptionPane.showMessageDialog(exportButton, "Could not start elastic exporter: " +
-                                        exception.getMessage() + "\nSee the logs for more information.", "Elastic Exporter", JOptionPane.ERROR_MESSAGE);
-                                logger.error("Could not start elastic exporter.", exception);
+                                JOptionPane.showMessageDialog(exportButton, "Could not start OpenSearch exporter: " +
+                                        exception.getMessage() + "\nSee the logs for more information.", "OpenSearch Exporter", JOptionPane.ERROR_MESSAGE);
+                                logger.error("Could not start OpenSearch exporter.", exception);
                             }
                             Boolean success = get();
                             boolean isRunning = buttonNowActive ^ !success;
@@ -104,7 +104,7 @@ public class ElasticExporterControlPanel extends JPanel {
         }, Alignment.FILL, 1.0, 1.0), BorderLayout.CENTER);
 
 
-        this.setBorder(BorderFactory.createTitledBorder("Elastic Exporter"));
+        this.setBorder(BorderFactory.createTitledBorder("OpenSearch Exporter"));
     }
 
     private void enableExporter() throws Exception {
