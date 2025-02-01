@@ -116,10 +116,6 @@ public enum LogEntryField {
         return labels;
     }
 
-    public String getFullLabel(String label){
-        return this.fieldGroup.getLabel() + "." + label;
-    }
-
     public String getFullLabel(){
         return this.fieldGroup.getLabel() + "." + labels[0];
     }

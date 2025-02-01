@@ -293,24 +293,34 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
 
         @Override
         public void serialize(LogEntry logEntry, JsonGenerator gen, SerializerProvider provider) throws IOException {
-            gen.writeStartObject();
+            Map<String, Object> nestedMap = buildStructuredObject(logEntry);
+            gen.writeObject(nestedMap);  // Serialize the nested structure
+        }
+
+        private Map<String, Object> buildStructuredObject(LogEntry logEntry) {
+            Map<String, Object> result = new HashMap<>();
             String stamp = null;
             for (LogEntryField field : ElasticExporter.this.fields) {
                 Object value = logEntry.getValueByKey(field);
                 if(value == null) continue;
                 try {
+                    String groupLabel = field.getFieldGroup().getLabel();
+                    String label = field.getLabels()[0];
+                    Map<String, Object> groupObj = (Map<String, Object>) result.computeIfAbsent(groupLabel, k -> new HashMap<>());
+
                     switch (field.getType().getSimpleName()){
-                        case "Integer": gen.writeNumberField(field.getFullLabel(), (Integer) value); break;
-                        case "Short": gen.writeNumberField(field.getFullLabel(), (Short) value); break;
-                        case "Double": gen.writeNumberField(field.getFullLabel(), (Double) value); break;
-                        case "String": gen.writeStringField(field.getFullLabel(), value.toString()); break;
-                        case "Boolean": gen.writeBooleanField(field.getFullLabel(), (Boolean) value); break;
+                        case "Integer":
+                        case "Short":
+                        case "Double":
+                        case "String":
+                        case "Boolean":
+                            groupObj.put(label, value);
+                            break;
                         case "Date":
-                            String label = field.getFullLabel();
-                            if (label.equals("Request.Time")) {
+                            if (field.getFullLabel().equals("Request.Time")) {
                                 stamp = sdf.format(((Date) value));
                             }
-                            gen.writeStringField(label, sdf.format(((Date) value)));
+                            groupObj.put(label, sdf.format(((Date) value)));
                             break;
                         default: log.error("Unhandled field type: " + field.getType().getSimpleName());
                     }
@@ -319,9 +329,9 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                 }
             }
             if(stamp != null){
-                gen.writeStringField("@timestamp", stamp);
+                result.put("@timestamp", stamp);
             }
-            gen.writeEndObject();
+            return result;
         }
     }
 }
