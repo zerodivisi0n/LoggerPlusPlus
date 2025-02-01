@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -63,6 +64,8 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
 
     private Logger logger = LogManager.getLogger(this);
 
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+
     protected ElasticExporter(ExportController exportController, Preferences preferences) {
         super(exportController, preferences);
         this.fields = new ArrayList<>(preferences.getSetting(Globals.PREF_PREVIOUS_ELASTIC_FIELDS));
@@ -85,6 +88,8 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
             }
         }
         controlPanel = new ElasticExporterControlPanel(this);
+
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
     @Override
@@ -289,6 +294,7 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
         @Override
         public void serialize(LogEntry logEntry, JsonGenerator gen, SerializerProvider provider) throws IOException {
             gen.writeStartObject();
+            String stamp = null;
             for (LogEntryField field : ElasticExporter.this.fields) {
                 Object value = logEntry.getValueByKey(field);
                 if(value == null) continue;
@@ -299,12 +305,21 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                         case "Double": gen.writeNumberField(field.getFullLabel(), (Double) value); break;
                         case "String": gen.writeStringField(field.getFullLabel(), value.toString()); break;
                         case "Boolean": gen.writeBooleanField(field.getFullLabel(), (Boolean) value); break;
-                        case "Date": gen.writeNumberField(field.getFullLabel(), ((Date) value).getTime()); break;
+                        case "Date":
+                            String label = field.getFullLabel();
+                            if (label.equals("Request.Time")) {
+                                stamp = sdf.format(((Date) value));
+                            }
+                            gen.writeStringField(label, sdf.format(((Date) value)));
+                            break;
                         default: log.error("Unhandled field type: " + field.getType().getSimpleName());
                     }
                 }catch (Exception e){
                     log.error("OpenSearchExporter: Couldn't serialize field. The field was ommitted from the export.");
                 }
+            }
+            if(stamp != null){
+                gen.writeStringField("@timestamp", stamp);
             }
             gen.writeEndObject();
         }
