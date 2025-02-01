@@ -87,7 +87,6 @@ public class LogEntry {
 	private int requestBodyLength = -1;
 	private String clientIP = "";
 	private boolean hasSetCookies = false;
-	private String formattedResponseTime = "";
 	private MimeType responseMimeType;
 	private MimeType responseInferredMimeType;
 	private int responseBodyLength = -1;
@@ -102,9 +101,8 @@ public class LogEntry {
 
 	private List<UUID> matchingColorFilters;
 	private List<Tag> matchingTags;
-	private String formattedRequestTime;
-	private Date responseDateTime = new Date(0); //Zero epoch dates to prevent null. Response date pulled from response headers
-	private Date requestDateTime = new Date(0); //Zero epoch dates to prevent null. Response date pulled from response headers
+	private Date requestDateTime = null; // If null, becomes epoch start time
+	private Date responseDateTime = null; // If null, gets pulled from the response
 	private int requestResponseDelay = -1;
 	private List<HttpHeader> responseHeaders;
 	private List<HttpHeader> requestHeaders;
@@ -122,9 +120,11 @@ public class LogEntry {
 		this.request = request;
 	}
 
-	public LogEntry(ToolType tool, HttpRequest request, HttpResponse response){
+	public LogEntry(ToolType tool, HttpRequest request, HttpResponse response, Date requestTime, Date responseTime){
 		this(tool, request);
 		this.response = response;
+		this.requestDateTime = requestTime;
+		this.responseDateTime = responseTime;
 	}
 
 	/**
@@ -136,7 +136,8 @@ public class LogEntry {
 	 */
 	public LogEntry(ToolType tool, HttpRequest request, Date formattedRequestTime) {
 		this(tool, request);
-		this.setReqestTime(formattedRequestTime);
+		this.requestDateTime = formattedRequestTime;
+		this.responseDateTime = new Date(0);
 	}
 
 	public boolean process() {
@@ -338,11 +339,6 @@ public class LogEntry {
 				this.responseDateTime = null;
 			}
 		}
-		if (responseDateTime != null) {
-			this.formattedResponseTime = LogProcessor.LOGGER_DATE_FORMAT.format(responseDateTime);
-		} else {
-			this.formattedResponseTime = "";
-		}
 
 		if (requestDateTime != null && responseDateTime != null) {
 			this.requestResponseDelay = (int) (responseDateTime.getTime() - requestDateTime.getTime());
@@ -394,16 +390,6 @@ public class LogEntry {
 	public byte[] getResponseBytes() {
 		if(response == null) return new byte[0];
 		return response.toByteArray().getBytes();
-	}
-
-	public void setReqestTime(Date requestTime) {
-		this.requestDateTime = requestTime;
-		this.formattedRequestTime = LogProcessor.LOGGER_DATE_FORMAT.format(this.requestDateTime);
-	}
-
-	public void setResponseTime(Date responseTime) {
-		this.responseDateTime = responseTime;
-		this.formattedResponseTime = LogProcessor.LOGGER_DATE_FORMAT.format(this.responseDateTime);
 	}
 
 	public void setComment(String comment) {

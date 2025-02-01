@@ -4,11 +4,13 @@ import burp.api.montoya.core.ToolType;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
+import burp.api.montoya.http.handler.TimingData;
 import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 import com.nccgroup.loggerplusplus.logentry.LogEntry;
 
 import javax.swing.*;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -47,14 +49,28 @@ public class EntryImportWorker extends SwingWorker<Void, Integer> {
             if(entryImportExecutor.isShutdown() || this.isCancelled()) return null;
             HttpRequest request;
             HttpResponse response;
+            TimingData timingData = null;
+            Date requestTime = null;
+            Date responseTime = null;
             if(isProxyEntries){
                 request = proxyEntries.get(index).finalRequest();
                 response = proxyEntries.get(index).originalResponse();
+                timingData = proxyEntries.get(index).timingData();
             }else{
                 request = httpEntries.get(index).request();
                 response = httpEntries.get(index).response();
+                timingData = httpEntries.get(index).timingData().orElse(null);
             }
-            final LogEntry logEntry = new LogEntry(originatingTool, request, response);
+
+            if (timingData != null) {
+                requestTime = Date.from(timingData.timeRequestSent().toInstant());
+                responseTime = Date.from(timingData.timeRequestSent().plusNanos(timingData.timeBetweenRequestSentAndEndOfResponse().getNano()).toInstant());
+            } else {
+                // Zero epoch date to prevent null. Response date pulled from response headers
+                requestTime = new Date(0);
+            }
+
+            final LogEntry logEntry = new LogEntry(originatingTool, request, response, requestTime, responseTime);
             int finalIndex = index;
             entryImportExecutor.submit(() -> {
                 if(this.isCancelled()) return;
