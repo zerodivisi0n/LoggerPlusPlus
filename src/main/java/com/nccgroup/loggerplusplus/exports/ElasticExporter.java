@@ -238,6 +238,7 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                     bulkBuilder.operations(op -> op
                             .index(idx -> idx
                                     .index(this.indexName)
+                                    .id(logEntry.getId())
                                     .document(logEntry)
                             )
                     );

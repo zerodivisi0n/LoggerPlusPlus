@@ -37,12 +37,15 @@ import org.apache.commons.lang3.StringUtils;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import static com.nccgroup.loggerplusplus.LoggerPlusPlus.montoya;
+import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
 @Getter
 @Setter
@@ -507,13 +510,10 @@ public class LogEntry {
 					return response.body().length();
 				case RTT:
 					return requestResponseDelay;
-				case REQUEST_HEADERS: {
-					if(requestHeaders == null) return "";
-					//Hacky workaround since Burp doesn't include path in headers.
-					return String.format("%s %s %s\r\n%s", request.method(), request.path(), request.httpVersion(), requestHeaders.stream().map(HttpHeader::toString).collect(Collectors.joining("\r\n")));
-				}
+				case REQUEST_HEADERS:
+					return buildRequestHeaders();
 				case RESPONSE_HEADERS:
-					return responseHeaders != null ? responseHeaders.stream().map(HttpHeader::toString).collect(Collectors.joining("\r\n")) : "";
+					return buildResponseHeaders();
 				case REDIRECT_URL:
 					return redirectURL;
 				case BASE64_REQUEST:
@@ -541,6 +541,38 @@ public class LogEntry {
 
 	public List<Tag> getMatchingTags() {
 		return matchingTags;
+	}
+
+	private String buildRequestHeaders() {
+		if (requestHeaders == null) return "";
+		//Hacky workaround since Burp doesn't include path in headers.
+		return String.format("%s %s %s\r\n%s", request.method(), request.path(), request.httpVersion(), requestHeaders.stream().map(HttpHeader::toString).collect(Collectors.joining("\r\n")));
+	}
+
+	private String buildResponseHeaders() {
+		if (responseHeaders == null) return "";
+
+		return responseHeaders.stream().map(HttpHeader::toString).collect(Collectors.joining("\r\n"));
+	}
+
+	public String getId() {
+		String sha1 = "";
+		try
+		{
+			MessageDigest crypt = MessageDigest.getInstance("SHA-1");
+			crypt.reset();
+			crypt.update(buildRequestHeaders().getBytes(StandardCharsets.UTF_8));
+			crypt.update(requestBodyString.getBytes(StandardCharsets.UTF_8));
+			crypt.update(buildResponseHeaders().getBytes(StandardCharsets.UTF_8));
+			crypt.update(responseBodyString.getBytes(StandardCharsets.UTF_8));
+			sha1 = encodeHexString(crypt.digest());
+		}
+		catch(NoSuchAlgorithmException e)
+		{
+			e.printStackTrace();
+		}
+
+		return String.format("%x%s", requestDateTime.getTime()/1000, sha1.substring(0, 8));
 	}
 
 	public HttpService getHttpService() {
