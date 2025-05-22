@@ -305,8 +305,8 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                 Object value = logEntry.getValueByKey(field);
                 if(value == null) continue;
                 try {
-                    String groupLabel = field.getFieldGroup().getLabel();
-                    String label = field.getLabels()[0];
+                    String groupLabel = toCamelCase(field.getFieldGroup().getLabel());
+                    String label = toCamelCase(field.getLabels()[0]);
                     Map<String, Object> groupObj = (Map<String, Object>) result.computeIfAbsent(groupLabel, k -> new HashMap<>());
 
                     switch (field.getType().getSimpleName()){
@@ -333,6 +333,14 @@ public class ElasticExporter extends AutomaticLogExporter implements ExportPanel
                 result.put("@timestamp", stamp);
             }
             return result;
+        }
+
+        private String toCamelCase(String s) { // converts CamelCase to camelCase
+            s = Character.toLowerCase(s.charAt(0))+s.substring(1);
+            if (s.length() > 1 && Character.isUpperCase(s.charAt(1))) { // URL -> url
+                s = s.toLowerCase();
+            }
+            return s;
         }
     }
 }
